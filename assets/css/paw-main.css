@@ -1,0 +1,36 @@
+.annotation {
+    text-align: center;
+}
+
+.visible {
+    display: block !important
+}
+
+.content {
+    max-width: 416px;
+    min-width: 320px;
+    margin: auto;
+    width: 98%;
+    height: auto
+}
+
+@font-face {
+    font-family: 'ProximaNova-Regular';
+    src: url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_21_0.eot");
+    src: url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_21_0.eot?#iefix") format("embedded-opentype"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_21_0.woff2") format("woff2"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_21_0.woff") format("woff"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_21_0.ttf") format("truetype");
+    font-style: normal
+}
+
+@font-face {
+    font-family: 'ProximaNova-Semibold';
+    src: url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_28_0.eot");
+    src: url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_28_0.eot?#iefix") format("embedded-opentype"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_28_0.woff2") format("woff2"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_28_0.woff") format("woff"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_28_0.ttf") format("truetype");
+    font-style: normal
+}
+
+@font-face {
+    font-family: 'ProximaNova-Bold';
+    src: url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_C_0.eot");
+    src: url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_C_0.eot?#iefix") format("embedded-opentype"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_C_0.woff2") format("woff2"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_C_0.woff") format("woff"), url("https://www.payanyway.ru/w/fonts/ProximaNova/33F824_C_0.ttf") format("truetype");
+    font-style: normal
+}
