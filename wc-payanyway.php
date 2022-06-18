@@ -4,8 +4,8 @@ if (!defined('ABSPATH')) exit; // Exit if accessed directly
 
 /**
  * Plugin Name: PayAnyWay Payment Gateway
- * Description: Provides a PayAnyWay Payment Gateway.
- * Version: 1.2.19
+ * Description: Provides a PayanyWay Payment Gateway.
+ * Version: 1.2.15
  * Author: PayAnyWay
  */
 
@@ -22,11 +22,14 @@ function woocommerce_payanyway()
 
     class WC_Payanyway extends WC_Payment_Gateway
     {
-        private static $_domain = 'payanyway.ru';
-
         public function __construct()
         {
+            $plugin_dir = plugin_dir_url(__FILE__);
+
+            global $woocommerce;
+
             $this->id = 'payanyway';
+            $this->icon = apply_filters('woocommerce_payanyway_icon', '' . $plugin_dir . 'payanyway.png');
             $this->has_fields = false;
 
             // Load the settings
@@ -34,12 +37,11 @@ function woocommerce_payanyway()
             $this->init_settings();
 
             // Define user set variables
-            $this->MNT_URL = self::$_domain;
+            $this->title = $this->get_option('title');
+            $this->MNT_URL = $this->get_option('MNT_URL');
             $this->MNT_ID = $this->get_option('MNT_ID');
             $this->MNT_DATAINTEGRITY_CODE = $this->get_option('MNT_DATAINTEGRITY_CODE');
             $this->MNT_TEST_MODE = $this->get_option('MNT_TEST_MODE');
-
-            $this->title = $this->get_option('title');
             $this->autosubmitpawform = $this->get_option('autosubmitpawform');
             $this->iniframe = $this->get_option('iniframe');
             $this->debug = $this->get_option('debug');
@@ -85,20 +87,27 @@ function woocommerce_payanyway()
          **/
         public function admin_options()
         {
-            if ($this->is_valid_for_use()){
+            ?>
+            <h3><?php _e('PayAnyWay', 'woocommerce'); ?></h3>
+            <p><?php _e('Настройка приема электронных платежей через PayAnyWay.', 'woocommerce'); ?></p>
+
+            <?php if ($this->is_valid_for_use()) : ?>
+
+            <table class="form-table">
+
+                <?php
+                // Generate the HTML For the settings form.
                 $this->generate_settings_html();
-            } else {
                 ?>
-                <div class="inline error">
-                    <p>
-                        <strong>
-                        <?php _e('Шлюз отключен', 'woocommerce_gateway_payanyway'); ?>
-                        </strong>:
-                        <?php _e('PayAnyWay не поддерживает валюты вашего магазина.', 'woocommerce_gateway_payanyway'); ?>
-                    </p>
-                </div>
+            </table><!--/.form-table-->
+
+        <?php else : ?>
+            <div class="inline error"><p>
+                    <strong><?php _e('Шлюз отключен', 'woocommerce'); ?></strong>: <?php _e('PayAnyWay не поддерживает валюты Вашего магазина.', 'woocommerce'); ?>
+                </p></div>
             <?php
-            }
+        endif;
+
         } // End admin_options()
 
         /**
@@ -109,7 +118,82 @@ function woocommerce_payanyway()
          */
         function init_form_fields()
         {
-            $this->form_fields = include 'includes/settings/settings-paw.php';
+            $this->form_fields = array(
+                'enabled' => array(
+                    'title' => __('Включить/Выключить', 'woocommerce'),
+                    'type' => 'checkbox',
+                    'label' => __('Включен', 'woocommerce'),
+                    'default' => 'yes'
+                ),
+                'title' => array(
+                    'title' => __('Название', 'woocommerce'),
+                    'type' => 'text',
+                    'description' => __('Это название, которое пользователь видит во время проверки.', 'woocommerce'),
+                    'default' => __('PayAnyWay', 'woocommerce')
+                ),
+                'MNT_ID' => array(
+                    'title' => __('Номер счета', 'woocommerce'),
+                    'type' => 'text',
+                    'description' => __('Пожалуйста введите Номер счета.<br/><b>Внимание!</b>Номер расширенного счета на demo.moneta.ru и в рабочем аккаунте PayAnyWay отличаются.', 'woocommerce'),
+                    'default' => '99999999'
+                ),
+                'MNT_DATAINTEGRITY_CODE' => array(
+                    'title' => __('Код проверки целостности данных', 'woocommerce'),
+                    'type' => 'text',
+                    'description' => __('Пожалуйста введите Код проверки целостности данных, указанный в настройках расширенного счета', 'woocommerce'),
+                    'default' => '******'
+                ),
+                'MNT_URL' => array(
+                    'title' => __('URL сервера оплаты', 'woocommerce'),
+                    'type' => 'select',
+                    'options' => array(
+                        'demo.moneta.ru' => 'demo.moneta.ru',
+                        'www.payanyway.ru' => 'www.payanyway.ru'
+                    ),
+                    'description' => __('Пожалуйста выберите URL сервера оплаты.', 'woocommerce'),
+                    'default' => ''
+                ),
+                'MNT_TEST_MODE' => array(
+                    'title' => __('Тестовый режим', 'woocommerce'),
+                    'type' => 'checkbox',
+                    'label' => __('Включен', 'woocommerce'),
+                    'description' => __('В этом режиме плата за товар не снимается.', 'woocommerce'),
+                    'default' => 'no'
+                ),
+                'autosubmitpawform' => array(
+                    'title' => __('Автоотправка', 'woocommerce'),
+                    'type' => 'checkbox',
+                    'label' => __('Включить автоотправку формы оплаты', 'woocommerce'),
+                    'default' => 'no'
+                ),
+                'iniframe' => array(
+                    'title' => __('Форма оплаты в iframe', 'woocommerce'),
+                    'type' => 'checkbox',
+                    'label' => __('Встроить форму оплаты в страницу сайта.', 'woocommerce'),
+                    'description' => __('Форма оплаты, предоставляемая платёжной системой, будет встроена в страницу Вашего сайта.', 'woocommerce'),
+                    'default' => 'no',
+                ),
+                'debug' => array(
+                    'title' => __('Debug', 'woocommerce'),
+                    'type' => 'checkbox',
+                    'label' => __('Включить логирование (<code>woocommerce/logs/payanyway.txt</code>)', 'woocommerce'),
+                    'default' => 'no'
+                ),
+                'description' => array(
+                    'title' => __('Description', 'woocommerce'),
+                    'type' => 'textarea',
+                    'description' => __('Описанием метода оплаты которое клиент будет видеть на вашем сайте.', 'woocommerce'),
+                    'default' => 'Оплата с помощью payanyway.'
+                ),
+                'instructions' => array(
+                    'title' => __('Instructions', 'woocommerce'),
+                    'type' => 'textarea',
+                    'description' => __('Инструкции, которые будут добавлены на страницу благодарностей.', 'woocommerce'),
+                    'default' => 'Оплата с помощью payanyway.'
+                ),
+
+            );
+
         }
 
         /**
@@ -117,7 +201,6 @@ function woocommerce_payanyway()
          **/
         function payment_fields()
         {
-            echo $this->get_description();
             if ( isset($_GET['pay_for_order']) && ! empty($_GET['key']) )
             {
                 $order = wc_get_order( wc_get_order_id_by_order_key( wc_clean( $_GET['key'] ) ) );
@@ -134,19 +217,15 @@ function woocommerce_payanyway()
             $order = new WC_Order($order_id);
             return array(
                 'result' => 'success',
-                'redirect' => add_query_arg(
-                    'order', $order->get_id(),
-                    add_query_arg(
-                        'key', $order->get_order_key(),
-                        $order->get_checkout_payment_url()
-                    )
-                ),
+                'redirect' => add_query_arg('order', $order->get_id(), add_query_arg('key', $order->get_order_key(), get_permalink(woocommerce_get_page_id('pay'))))
             );
         }
 
-        private function cleanProductName($str)
+        function cleanProductName($value)
         {
-            return preg_replace('/[^0-9a-zA-Zа-яА-ЯёЁ\-\,\.\(\)\;\_\№\/\+\& ]/ui', '', htmlspecialchars_decode($str, ENT_QUOTES));
+            $result = preg_replace('/[^0-9a-zA-Zа-яА-Я ]/ui', '', htmlspecialchars_decode($value));
+            $result = trim(mb_substr($result, 0, 12));
+            return $result;
         }
 
         /**
@@ -158,13 +237,11 @@ function woocommerce_payanyway()
 
             $amount = number_format($order->get_total(), 2, '.', '');
             $test_mode = ($this->MNT_TEST_MODE == 'yes') ? 1 : 0;
-            $autosubmit_paw_form = ($this->autosubmitpawform == 'yes') ? 1 : 0;
-            $in_iframe = ($this->iniframe == 'yes') ? 1 : 0;
+            $autosubmitpawform = ($this->autosubmitpawform == 'yes') ? 1 : 0;
+            $iniframe = ($this->iniframe == 'yes') ? 1 : 0;
             $currency = get_woocommerce_currency();
             if ($currency == 'RUR') $currency = 'RUB';
-            $signature = md5($this->MNT_ID . $order_id . $amount . $currency . $test_mode . $this->MNT_DATAINTEGRITY_CODE);
-
-            $wcKey = (isset($_GET['key'])) ? $_GET['key'] : '';
+            $signature = md5($this->MNT_ID . $order_id . $amount . $currency . $test_mode . htmlspecialchars_decode($this->MNT_DATAINTEGRITY_CODE));
 
             $args = array(
                 'MNT_ID' => $this->MNT_ID,
@@ -172,38 +249,51 @@ function woocommerce_payanyway()
                 'MNT_TRANSACTION_ID' => $order_id,
                 'MNT_TEST_MODE' => $test_mode,
                 'MNT_CURRENCY_CODE' => $currency,
-                'MNT_SIGNATURE' => $signature,
-                'MNT_SUCCESS_URL' => get_site_url() . "/?wc-api=wc_payanyway&payanyway=success&key={$wcKey}&order_id={$order_id}",
-                'MNT_FAIL_URL' => get_site_url() . "/?wc-api=wc_payanyway&payanyway=fail",
-                'MNT_RETURN_URL' => get_site_url()
+                'MNT_SIGNATURE' => $signature
             );
 
-            $form_fields = array();
+            $args_array = array();
+
             foreach ($args as $key => $value) {
-                $form_fields[] = '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '" />';
+                $args_array[] = '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '" />';
             }
 
-            wp_enqueue_style('paw_css_main', plugin_dir_url( __FILE__ ) . 'assets/css/paw-main.css', '', '');
-
-            if ($in_iframe) {
-                wp_enqueue_script('paw_js_ap', 'https://www.payanyway.ru/applepay/partnerwebmessaging.js');
-                wp_enqueue_script('paw_js_iframe', plugin_dir_url(__FILE__) . 'assets/js/paw-iframe.js', '', '', true);
-                $form_html = '<div id="pawiframewrapper" style="display: none; text-align: -webkit-center;">';
-                $form_html .= http_build_query($args, '', '&amp;');
-                $form_html .= '</div>';
-            }
-            else {
-                wp_enqueue_script('paw_js_form', plugin_dir_url(__FILE__) . 'assets/js/paw-form.js', '', '', true);
-                if ($autosubmit_paw_form) {
-                    wp_enqueue_script('paw_js_autosubmit', plugin_dir_url(__FILE__) . 'assets/js/paw-autosubmit.js', '', '', true);
+            if($iniframe) 
+            {
+                $annotation =   '<p>' . __('Спасибо за Ваш заказ, пожалуйста, заполните форму ниже, чтобы сделать платёж.', 'woocommerce') . '</p>';
+                $form_html =    '<div class="payanyway_wrapper">
+                                    <iframe src="' . esc_url("https://" . $this->MNT_URL . "/assistant.widget?" . http_build_query($args, '', '&amp;')) . '"
+                                    id="payanyway_payment_form" name="paymentform" frameborder="0" style="width: 90%; height: -webkit-fill-available; min-height: 550px; margin-left: -50px; margin-top: -22px;">
+                                    </iframe>
+                                </div>';
+            } else {
+                $annotation =   '<p>' . __('Спасибо за Ваш заказ, пожалуйста, нажмите кнопку ниже, чтобы сделать платёж.', 'woocommerce') . '</p>';
+            	if ( isset($_GET['pay_for_order']) && ! empty($_GET['key']) )
+            	{
+	                $form_html = '<form></form><form action="'.esc_url("https://" . $this->MNT_URL . "/assistant.htm") . '" method="POST" id="payanyway_payment_form" name="paymentform">'."\n".
+                        implode("\n", $args_array).
+                        '<input type="submit" class="button alt" style="display: none" id="submit_payanyway_payment_form" value="' . __('Оплатить', 'woocommerce') . '" />'."\n" .
+                        '</form>'."\n".
+                        '<script type="text/javascript">'."\n".
+                        'jQuery(function() {'."\n".
+                        '    jQuery("#order_review").submit(function(ev) {'."\n".
+                        '        if (jQuery("#payment_method_payanyway").prop("checked")) {'."\n".
+                        '            ev.preventDefault();'."\n".
+                        '            jQuery("#submit_payanyway_payment_form").click();'."\n".
+                        '        }'."\n".
+                        '    });'."\n".
+                        '});</script>';
+            	} else {
+	                $form_html =    '<form action="' . esc_url("https://" . $this->MNT_URL . "/assistant.htm") . '" method="POST" id="payanyway_payment_form" name="paymentform">' . "\n" .
+	                                    implode("\n", $args_array) .
+	                                    '<input type="submit" class="button alt" id="submit_payanyway_payment_form" value="' . __('Оплатить', 'woocommerce') . '" /> <a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __('Отказаться от оплаты и вернуться в корзину', 'woocommerce') . '</a>' . "\n" .
+	                                '</form>';
+	                if ($autosubmitpawform) {
+    	                $form_html .= '<script type="text/javascript">document.paymentform.submit();</script>';
+	                }
                 }
-                $form_html = '<div id="pawformwrapper" style="display: none; text-align: -webkit-center;">';
-                $form_html .= implode("\n", $form_fields);
-                $form_html .= '</div>';
             }
-
-            echo $form_html;
-
+            echo $annotation.$form_html;
         }
 
         /**
@@ -215,7 +305,7 @@ function woocommerce_payanyway()
                 && isset($posted['MNT_AMOUNT']) && isset($posted['MNT_CURRENCY_CODE']) && isset($posted['MNT_TEST_MODE'])
                 && isset($posted['MNT_SIGNATURE'])
             ) {
-                $signature = md5($posted['MNT_ID'] . $posted['MNT_TRANSACTION_ID'] . $posted['MNT_OPERATION_ID'] . $posted['MNT_AMOUNT'] . $posted['MNT_CURRENCY_CODE'] . $posted['MNT_TEST_MODE'] . $this->MNT_DATAINTEGRITY_CODE);
+                $signature = md5($posted['MNT_ID'] . $posted['MNT_TRANSACTION_ID'] . $posted['MNT_OPERATION_ID'] . $posted['MNT_AMOUNT'] . $posted['MNT_CURRENCY_CODE'] . $posted['MNT_TEST_MODE'] . htmlspecialchars_decode($this->MNT_DATAINTEGRITY_CODE));
                 if ($posted['MNT_SIGNATURE'] !== $signature) {
                     return false;
                 }
@@ -242,32 +332,21 @@ function woocommerce_payanyway()
                     $order = new WC_Order($MNT_TRANSACTION_ID);
                     $items = $order->get_items();
 
+                    // Check order not already completed
+                    /*
+                    if ($order->status == 'completed') {
+                        die('FAIL');
+                    }
+                    */
+
                     // Payment completed
-                    $order->add_order_note(__('Платеж успешно завершен.', 'woocommerce_gateway_payanyway'));
-                    $order->update_status('processing', __('Платеж успешно оплачен', 'woocommerce_gateway_payanyway'));
+                    $order->add_order_note(__('Платеж успешно завершен.', 'woocommerce'));
+                    $order->update_status('processing', __('Платеж успешно оплачен', 'woocommerce'));
                     $order->payment_complete();
 
-                    //формирование xml ответа
-                    header("Content-type: application/xml");
-                    $resultCode = 200;
-                    $signature = md5($resultCode . $_REQUEST['MNT_ID'] . $_REQUEST['MNT_TRANSACTION_ID'] . $this->MNT_DATAINTEGRITY_CODE);
-                    $result = '<?xml version="1.0" encoding="UTF-8" ?>';
-                    $result .= '<MNT_RESPONSE>';
-                    $result .= '<MNT_ID>' . $_REQUEST['MNT_ID'] . '</MNT_ID>';
-                    $result .= '<MNT_TRANSACTION_ID>' . $_REQUEST['MNT_TRANSACTION_ID'] . '</MNT_TRANSACTION_ID>';
-                    $result .= '<MNT_RESULT_CODE>' . $resultCode . '</MNT_RESULT_CODE>';
-                    $result .= '<MNT_SIGNATURE>' . $signature . '</MNT_SIGNATURE>';
-                    $result .= '<MNT_ATTRIBUTES>';
-                    $result .= '<ATTRIBUTE>';
-                    $result .= '<KEY>cms</KEY>';
-                    $result .= '<VALUE>wp</VALUE>';
-                    $result .= '</ATTRIBUTE>';
-                    $result .= '<ATTRIBUTE>';
-                    $result .= '<KEY>cms_m</KEY>';
-                    $result .= '<VALUE>wc</VALUE>';
-                    $result .= '</ATTRIBUTE>';
-
                     // данные для кассы
+                    $kassa_inventory = null;
+                    $kassa_customer = null;
                     $kassa_delivery = $order->get_total_shipping();
 
                     // добавить поля для кассы
@@ -278,16 +357,25 @@ function woocommerce_payanyway()
                         $itemName = (isset($item['name'])) ? $item['name'] : $item->get_name();
                         $itemPrice = $order->get_item_total($item);
                         $itemQuantity = (isset($item['item_meta']['_qty'][0])) ? $item['item_meta']['_qty'][0] : $item->get_quantity();
-                        $inventory[] = array(
-                                "name" => $this->cleanProductName($itemName),
-                                "price" => $itemPrice,
-                                "quantity" => $itemQuantity,
-                                "vatTag" => 1105
-                        );
+                        $inventory[] = array("name" => trim(preg_replace("/&?[a-z0-9]+;/i", "", htmlspecialchars($itemName))), "price" => $itemPrice, "quantity" => $itemQuantity, "vatTag" => 1105);
                     }
 
                     if (count($inventory)) {
                         $kassa_inventory = json_encode($inventory);
+                        // сформировать xml ответ
+                        header("Content-type: application/xml");
+                        $resultCode = 200;
+                        $signature = md5($resultCode . $_REQUEST['MNT_ID'] . $_REQUEST['MNT_TRANSACTION_ID'] . htmlspecialchars_decode($this->MNT_DATAINTEGRITY_CODE));
+                        $result = '<?xml version="1.0" encoding="UTF-8" ?>';
+                        $result .= '<MNT_RESPONSE>';
+                        $result .= '<MNT_ID>' . $_REQUEST['MNT_ID'] . '</MNT_ID>';
+                        $result .= '<MNT_TRANSACTION_ID>' . $_REQUEST['MNT_TRANSACTION_ID'] . '</MNT_TRANSACTION_ID>';
+                        $result .= '<MNT_RESULT_CODE>' . $resultCode . '</MNT_RESULT_CODE>';
+                        $result .= '<MNT_SIGNATURE>' . $signature . '</MNT_SIGNATURE>';
+
+                        if ($kassa_inventory || $kassa_customer || $kassa_delivery) {
+                            $result .= '<MNT_ATTRIBUTES>';
+                        }
 
                         if ($kassa_inventory) {
                             $result .= '<ATTRIBUTE>';
@@ -309,11 +397,21 @@ function woocommerce_payanyway()
                             $result .= '<VALUE>' . $kassa_delivery . '</VALUE>';
                             $result .= '</ATTRIBUTE>';
                         }
+
+                        if ($kassa_inventory || $kassa_customer || $kassa_delivery) {
+                            $result .= '</MNT_ATTRIBUTES>';
+                        }
+
+                        $result .= '</MNT_RESPONSE>';
+
+                        echo $result;
+
+                    }
+                    else {
+                        echo 'SUCCESS';
                     }
 
-                    $result .= '</MNT_ATTRIBUTES>';
-                    $result .= '</MNT_RESPONSE>';
-                    exit($result);
+                    exit;
 
                 } else {
                     die('FAIL');
@@ -325,12 +423,13 @@ function woocommerce_payanyway()
                 exit;
             } else if (isset($_REQUEST['payanyway']) AND $_REQUEST['payanyway'] == 'fail') {
                 $order = new WC_Order($MNT_TRANSACTION_ID);
-                $order->update_status('failed', __('Платеж не оплачен', 'woocommerce_gateway_payanyway'));
+                $order->update_status('failed', __('Платеж не оплачен', 'woocommerce'));
                 wp_redirect($order->get_cancel_order_url());
                 exit;
             }
 
         }
+
     }
 
     /**
