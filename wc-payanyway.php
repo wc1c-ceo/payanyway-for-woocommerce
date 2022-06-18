@@ -201,10 +201,12 @@ function woocommerce_payanyway()
          **/
         function payment_fields()
         {
+	        echo $this->get_description();
+
             if ( isset($_GET['pay_for_order']) && ! empty($_GET['key']) )
             {
-                $order = wc_get_order( wc_get_order_id_by_order_key( wc_clean( $_GET['key'] ) ) );
-                $this->receipt_page($order->get_id());
+                //$order = wc_get_order( wc_get_order_id_by_order_key( wc_clean( $_GET['key'] ) ) );
+               // $this->receipt_page($order->get_id());
             }
         }
 
