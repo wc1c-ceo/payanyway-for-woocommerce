@@ -260,10 +260,10 @@ function woocommerce_payanyway()
 
             if($iniframe) 
             {
-                $annotation =   '<p>' . __('Спасибо за Ваш заказ, пожалуйста, заполните форму ниже, чтобы сделать платёж.', 'woocommerce') . '</p>';
+                $annotation =   '<p>' . __('Спасибо за Ваш заказ, пожалуйста, заполните форму ниже, чтобы произвести платёж по заказу. Оплата зачислится мгновенно и статус заказа изменится на Оплачен.', 'woocommerce') . '</p>';
                 $form_html =    '<div class="payanyway_wrapper">
                                     <iframe src="' . esc_url("https://" . $this->MNT_URL . "/assistant.widget?" . http_build_query($args, '', '&amp;')) . '"
-                                    id="payanyway_payment_form" name="paymentform" frameborder="0" style="width: 90%; height: -webkit-fill-available; min-height: 550px; margin-left: -50px; margin-top: -22px;">
+                                    id="payanyway_payment_form" name="paymentform" frameborder="0" style="width: 100%; height: -webkit-fill-available; min-height: 550px;">
                                     </iframe>
                                 </div>';
             } else {
